@@ -1,5 +1,8 @@
 {
-    "os_image": "https://example.com/os_image.img",
+    "os_image": {
+        "name": "os_image.iso",
+        "link": "https://example.com/os_image.iso"
+    },
     "tasks": [
         {
             "type": "install_packages",
