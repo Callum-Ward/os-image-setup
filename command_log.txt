@@ -1,0 +1,6 @@
+INFO:root: command 'ls' returned: 
+command_log.txt
+config.json
+dev.py
+setup.py
+
