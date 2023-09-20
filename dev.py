@@ -12,8 +12,6 @@ if __name__ == "__main__":
     with open(config_file) as f:
         config = json.load(f)
 
-    name = 'name' in config['os_image'] ? config['os_image']['name'] : config['os_image']['link']
-
     # Check if a name is used
     if 'name' in config['os_image']:
         name = config['os_image']['name']
