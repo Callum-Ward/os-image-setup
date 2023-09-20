@@ -3,8 +3,54 @@ import sys
 import subprocess
 import os
 import logging
+from abc import ABC, abstractmethod
+
+class BaseTask(ABC):
+    def __init__(self, name):
+        self.name = name
+        self.state = "PENDING"
+        
+
+    def _execute(self, command, logging):
+        self.state = "EXECUTING"
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)   
+        except subprocess.CalledProcessError as e:
+            print(e.stderr)
+            logging.error(f" Program return code: {e.returncode}\n{e.stderr}")
+            sys.exit(1)
+        self.state = "DONE" if result.returncode == 0 else "CANCELLED"
+        return result
+
+    @abstractmethod
+    def run_command(self, command, logging):
+        pass
 
 
+class PackageInstall(BaseTask):
+    def run_command(self, package_names, logging):
+        command = f"apt-get install -y {package_names}"
+        self._execute(command, logging)
+
+
+class TaskManger:
+    def __init__(self):
+        self.tasks = []
+
+    def _log(self, logging, result):
+        if result.returncode:
+            logging.error(f" command '{command}' return code: {result.returncode}\n{result.stderr}")
+        else:
+            logging.info(f" command '{command}' returned: \n{result.stdout}")
+
+    def add_task(self, task):
+        self.tasks.append(task)
+
+    def run_tasks(self, logging):
+        for task in self.tasks:
+            task.run_command(logging)
+
+    
 def run_command(command, logging, display_output):
 
     try:
