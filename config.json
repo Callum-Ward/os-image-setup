@@ -6,26 +6,41 @@
     "tasks": [
         {
             "type": "install_packages",
-            "packages": [
+            "args" : {"packages": [
                 "package1",
                 "package2"
-            ]
+            
+            ]}
         },
         {
             "type": "copy_files",
-            "src": "/path/to/source",
-            "dest": "/path/to/destination"
+            "args": {
+                "files": [
+                    {
+                        "src": "/path/to/source",
+                        "dest": "/path/to/destination"
+                    },
+                    {
+                        "src": "/path/to/source",
+                        "dest": "/path/to/destination"
+                    }
+                ]
+            }
         },
         {
             "type": "edit_file",
-            "file": "/path/to/file",
-            "old_string": "old_value",
-            "new_string": "new_value"
+            "args": {
+                "file": "/path/to/file",
+                "old_string": "old_value",
+                "new_string": "new_value"
+            }
         },
         {
             "type": "resize_partition",
-            "partition": "/dev/sda1",
-            "size": "10G"
+            "args": {
+                "partition": "/dev/sda1",
+                "size": "10G"
+            }
         }
     ]
 }

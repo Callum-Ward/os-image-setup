@@ -5,68 +5,73 @@ import os
 import logging
 from abc import ABC, abstractmethod
 
-class BaseTask(ABC):
-    def __init__(self, name):
-        self.name = name
-        self.state = "PENDING"
-        
-
-    def _execute(self, command, logging):
-        self.state = "EXECUTING"
-        try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)   
-        except subprocess.CalledProcessError as e:
-            print(e.stderr)
-            logging.error(f" Program return code: {e.returncode}\n{e.stderr}")
-            sys.exit(1)
-        self.state = "DONE" if result.returncode == 0 else "CANCELLED"
-        return result
-
-    @abstractmethod
-    def run_command(self, command, logging):
-        pass
+class TaskFactory:
+    @staticmethod
+    def create_task(task):
+        print(f"create_task: {task['type']}")
+        #create a switch statement instead of if/else
+        task_mapping = {
+            "install_packages": PackageInstall
+        }
+        TaskClass = task_mapping.get(task['type'], None)
+        if TaskClass is None:
+            pass
+            #raise ValueError(f"Task type '{task['type']}' not supported")
+        else:
+            return TaskClass(task['type'], task['args'])
 
 
-class PackageInstall(BaseTask):
-    def run_command(self, package_names, logging):
-        command = f"apt-get install -y {package_names}"
-        self._execute(command, logging)
-
-
-class TaskManger:
-    def __init__(self):
+class TaskManager:
+    def __init__(self,tasks,logging):
         self.tasks = []
-
-    def _log(self, logging, result):
+        self._logging = logging
+        for task in tasks:
+            new_task = TaskFactory.create_task(task)
+            if new_task is None:
+                print(f"Task type '{task['type']}' not supported")
+            else:
+                self.tasks.append(TaskFactory.create_task(task))
+        
+    def _log(self, result):
         if result.returncode:
             logging.error(f" command '{command}' return code: {result.returncode}\n{result.stderr}")
         else:
             logging.info(f" command '{command}' returned: \n{result.stdout}")
 
-    def add_task(self, task):
-        self.tasks.append(task)
+    def _execute(self, task):
+        task.state = "EXECUTING"
+        result = None
+        try:
+            for command in task.commands:
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                self._log(result)
+        except subprocess.CalledProcessError as e:
+            print(e.stderr)
+            logging.error(f" Program return code: {e.returncode}\n{e.stderr}")
+            sys.exit(1)
+        task.state = "DONE" if result.returncode == 0 else "CANCELLED"
 
-    def run_tasks(self, logging):
+    def run_tasks(self, display_output):
         for task in self.tasks:
-            task.run_command(logging)
+            self._execute(task)
+            if display_output: print(f"{task.name} task is: {task.state}")
 
-    
-def run_command(command, logging, display_output):
+class BaseTask(ABC):
+    def __init__(self, name, args):
+        self.name = name
+        self.state = "PENDING"
+        self.commands = self.set_commands(args)
 
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)    
-    except subprocess.CalledProcessError as e:
-        # Handle the error
-        print(e.stderr)
-        logging.error(f" Program return code: {e.returncode}\n{e.stderr}")
-        sys.exit(1)
-        
-    if result.returncode:
-        if display_output: print(f"'{command}' FAILED")
-        logging.error(f" command '{command}' return code: {result.returncode}\n{result.stderr}")
-    else:
-        if display_output: print(f"'{command}' EXECUTED")
-        logging.info(f" command '{command}' returned: \n{result.stdout}")
+    @abstractmethod
+    def set_commands(self, args):
+        pass
+
+class PackageInstall(BaseTask):
+    def set_commands(self, args):
+        commands = ["ls"]
+        package_names = args['packages']
+        #commands = [f"apt-get install -y {package_names}"]
+        return commands
     
 
 if __name__ == "__main__":
@@ -90,11 +95,15 @@ if __name__ == "__main__":
 
     command = input("Enter a command: ")
 
-    diplay_output = input("Display command output? (y/n): ").lower()
-    if diplay_output == 'y':
-        run_command(command, logging, True)
-    else:
-        run_command(command, logging, False)
+    output = input("Display command output? (y/n): ").lower()
+    display_output = True if output == 'y' else False
+
+    task_manager = TaskManager(config['tasks'],logging)
+    task_manager.run_tasks(display_output)
+
+
+
+    
         
 
 
